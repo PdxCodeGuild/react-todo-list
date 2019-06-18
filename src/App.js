@@ -1,121 +1,81 @@
 import React from 'react';
+
 import './App.css';
+import { TodoListContext, TodoListProvider } from './state';
 
-const Item = (props) => {
-  const { item, index, toggleCompleted, removeItem } = props;
-  return (
-    <div className="Item">
-      <div>
-        {item.text}
-      </div>
-      <input 
-        type="checkbox" 
-        onChange={() => toggleCompleted(index)} 
-        value={item.completed} 
-      />
-      <button onClick={() => removeItem(index)}>×</button>
-    </div>
-  )
-}
+const Form = () => {
+  const [state, dispatch] = React.useContext(TodoListContext);
 
-const List = (props) => {
-  const { items, removeItem, toggleCompleted } = props;
-
-  return (
-    <div className="Items">
-    {items.length === 0 && <div><em>No items...</em></div>}
-    {items.map((item, i) => (
-      <Item 
-        key={i} 
-        item={item} 
-        index={i}
-        toggleCompleted={toggleCompleted}
-        removeItem={removeItem}
-      />
-    ))}
-    </div>
-  )
-}
-
-class App extends React.Component {
-  initialState = {
-    items: [],
-    text: '',
+  const onChange = (event) => {
+    dispatch({type: 'setText', payload: event.target.value});
   }
 
-  constructor(props) {
-    super(props);
-
-    this.state = this.initialState;
-  }
-
-  addItem = (event) => {
+  const onSubmit = (event) => {
     event.preventDefault();
 
-    const { items, text } = this.state;
+    dispatch({type: 'addItem', payload: {
+      text: state.text,
+      completed: false
+    }});
 
-    this.setState({
-      items: [...items, {
-        text,
-        completed: false
-      }],
-      text: '',
-    });
+    dispatch({type: 'setText', payload: ''});
 
-    // For laughs!
     return false;
   }
 
-  removeItem = (index) => {
-    const { items } = this.state;
-
-    this.setState({
-      items: items.filter((item, i) => i !== index),
-    });
-  }
-
-  toggleCompleted = (index) => {
-    const { items } = this.state;
-
-    const newItems = items.slice();
-    newItems[index].completed = !newItems[index].completed;
-
-    this.setState({
-      items: newItems,
-    });
-  }
-
-  handleInputChange = (event) => {
-    const text = event.target.value;
-
-    this.setState({
-      text
-    });
-  }
-
-  
-
-  render() {
-    const { items, text } = this.state;
-
-    return (
-      <div className="TodoList">
-        <form onSubmit={this.addItem}>
-          <input
-            type="text"
-            onChange={this.handleInputChange}
-            value={text} 
-          />
-          <button>Add</button>
-        </form>
-        <List 
-          items={items} 
-          removeItem={this.removeItem} 
-          toggleCompleted={this.toggleCompleted} 
-        />
-      </div>
-    )
-  }
+  return (
+    <form onSubmit={onSubmit}>
+      <input type="text" value={state.text} onChange={onChange} />
+      <button>Add Item</button>
+    </form>
+  );
 }
 
-export default App;
+const Item = (props) => {
+  const [state, dispatch] = React.useContext(TodoListContext);
+
+  const removeItem = () => dispatch({type: 'removeItem', payload: props.index});
+  const toggleItem = () => dispatch({type: 'toggleItem', payload: props.index});
+
+  return (
+    <div className="Item">
+      <div>{props.item.text}</div>
+      <input type="checkbox" value={props.item.completed} onChange={toggleItem} />
+      <button onClick={removeItem}>X</button>
+    </div>
+  );
+}
+
+const List = () => {
+  const [state] = React.useContext(TodoListContext);
+
+  return (
+    <div className="Items">
+      {state.items.length === 0 && (
+        <div>
+          <em>Nothing to do...</em>
+        </div>
+      )}
+      {state.items && state.items.map((item, i) => (
+        <Item
+          key={i}
+          index={i}
+          item={item}
+        />
+      ))}
+    </div>
+  );
+};
+
+const TodoList = () => {
+  return (
+    <div className="TodoList">
+      <TodoListProvider>
+        <Form />
+        <List />
+      </TodoListProvider>
+    </div>
+  );
+}
+
+export default TodoList;
